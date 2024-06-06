@@ -10,14 +10,16 @@ use Illuminate\Queue\SerializesModels;
 
 class BlogPostAfterDeleteJob implements ShouldQueue
 {
-      /**
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    /**
      * @var int
      */
     private $blogPostId;
-    
+
     /**
      * Create a new job instance.
-     * 
+     *
      * @param int $blogPostId
      *
      * @return void
@@ -36,5 +38,4 @@ class BlogPostAfterDeleteJob implements ShouldQueue
     {
         logs()->warning("Видалено запис в блозі [{$this->blogPostId}]");
     }
-
 }

@@ -11,13 +11,20 @@ use App\Models\BlogPost;
 use App\Http\Requests\BlogPostCreateRequest;
 use App\Jobs\BlogPostAfterCreateJob;
 use App\Jobs\BlogPostAfterDeleteJob;
+use Illuminate\Foundation\Bus\DispatchesJobs;
+
 class PostController extends BaseController
 {
-     /**
+    use DispatchesJobs;
+
+    /**
      * @var BlogPostRepository
      */
     private $blogPostRepository;
-    private $blogCategoryRepository;
+    /**
+     * @var BlogCategoryRepository
+     */
+    private $blogCategoryRepository; // властивість через яку будемо звертатись в репозиторій категорій
     public function __construct()
     {
         parent::__construct();
@@ -41,7 +48,6 @@ class PostController extends BaseController
     {
         $item = new BlogPost();
         $categoryList = $this->blogCategoryRepository->getForComboBox();
-        
 
         return view('blog.admin.posts.edit', compact('item', 'categoryList'));
     }
@@ -58,7 +64,6 @@ class PostController extends BaseController
         if ($item) {
             $job = new BlogPostAfterCreateJob($item);
             $this->dispatch($job);
-
             return redirect()
                 ->route('blog.admin.posts.edit', [$item->id])
                 ->with(['success' => 'Успішно збережено']);
@@ -87,25 +92,24 @@ class PostController extends BaseController
             abort(404);
         }
         $categoryList = $this->blogCategoryRepository->getForComboBox();
-     
+
         return view('blog.admin.posts.edit', compact('item', 'categoryList'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(BlogPostUpdateRequest  $request, string $id)
     {
         $item = $this->blogPostRepository->getEdit($id);
         if (empty($item)) { //якщо ід не знайдено
             return back() //redirect back
-                ->withErrors(['msg' => "Запис id=[{$id}] не знайдено"]) //видати помилку
-                ->withInput(); //повернути дані
+            ->withErrors(['msg' => "Запис id=[{$id}] не знайдено"]) //видати помилку
+            ->withInput(); //повернути дані
         }
 
         $data = $request->all(); //отримаємо масив даних, які надійшли з форми
-        
-          
+
         $result = $item->update($data); //оновлюємо дані об'єкта і зберігаємо в БД
 
         if ($result) {
@@ -127,6 +131,7 @@ class PostController extends BaseController
         $result = BlogPost::destroy($id); //софт деліт, запис лишається
 
         //$result = BlogPost::find($id)->forceDelete(); //повне видалення з БД
+
 
         if ($result) {
             BlogPostAfterDeleteJob::dispatch($id)->delay(20);
